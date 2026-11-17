@@ -42,8 +42,14 @@ Photo sources are credited in the pages. The inspected source pages did not iden
 - Photographer: Frank Schulenburg. [Wikimedia Commons file page](https://commons.wikimedia.org/wiki/File:Jen-Hsun_Huang_Engineering_Center_in_2016.jpg).
 - License: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Attribution is required. The resized copies here are shared under the same license.
 - Original: 5247 × 3498 pixels, SHA-1 `e383f675520e94b29523515c9326bf4e65fe4f3a` (matches the Commons record), downloaded October 30, 2026.
-- Changes: resized to 2400 × 1600 (SHA-256 `f5120ad796c0207954c28a17a5935ebdb9f80fc68b238d9d3d15d2e3264e6c52`) and 1200 × 800 (SHA-256 `62963f512f75ad43e257fa30227cc94b90985ead87e7958046bc75b58b572cca`). The navy shading is applied in CSS; the image files are not tinted or cropped.
-- Not shown on the pages since the November 2, 2026 redesign; the files are kept in case the photograph is used again. If it returns, show the credit "Photo: Frank Schulenburg" linked to the Wikimedia Commons file page.
+- Changes: resized to 2400 × 1600 (SHA-256 `f5120ad796c0207954c28a17a5935ebdb9f80fc68b238d9d3d15d2e3264e6c52`) and 1200 × 800 (SHA-256 `62963f512f75ad43e257fa30227cc94b90985ead87e7958046bc75b58b572cca`). The image files are not tinted; the page crops the view in CSS.
+- Shown as the homepage opening photograph since November 4, 2026, with the visible credit "Photo: Frank Schulenburg, CC BY-SA 4.0" linked to the Wikimedia Commons file page.
+
+### assets/js/earth-textures.js
+
+- Colour, elevation and water images come from the `three-globe` npm package, version 2.45.6 (`example/img/earth-blue-marble.jpg`, `earth-topology.png`, `earth-water.png`; package licence MIT). The colour image is understood to derive from NASA Blue Marble imagery. Confirm the original source and its terms before a public launch.
+- Rivers: [Natural Earth](https://www.naturalearthdata.com/) 1:10m rivers and lake centerlines (public domain), drawn into the colour image for rivers of scale rank 7 or lower.
+- Changes: colour image brightened and sharpened, rivers added, re-encoded as JPEG; elevation and water combined into one relief image. Both are embedded as base64 data.
 
 ## People photographs
 
