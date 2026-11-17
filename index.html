@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <meta name="description" content="A working concept for a Stanford lab studying AI, entrepreneurial judgment, how new companies organize, and how policy and capital shape which ventures get built.">
-  <meta name="theme-color" content="#1c1b19">
+  <meta name="theme-color" content="#ffffff">
   <title>AI &amp; Entrepreneurship Lab — Working Preview</title>
   <link rel="stylesheet" href="styles.css?v=20261102">
 </head>
-<body>
+<body class="home">
   <a class="skip-link" href="#main">Skip to content</a>
-  <div class="preview-note">Working preview <span aria-hidden="true">·</span> Name, lab roles and affiliation are under discussion.</div>
-  <header class="site-header is-overlay">
+  <div class="preview-note preview-note-light">Working preview <span aria-hidden="true">·</span> Name, lab roles and affiliation are under discussion.</div>
+  <header class="site-header">
     <div class="header-inner">
       <a class="wordmark" href="index.html" aria-label="AI and Entrepreneurship Lab home"><svg class="wordmark-mark" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5"/><circle cx="13" cy="13" r="6.5"/><circle class="core" cx="13" cy="13" r="3"/></svg><span>AI &amp; Entrepreneurship Lab</span></a>
       <nav aria-label="Main navigation">
@@ -25,26 +25,21 @@
   </header>
 
   <main id="main">
-    <section class="field" id="map" aria-labelledby="lab-title" data-research-globe>
-      <div class="globe-viewport">
-        <canvas class="globe-canvas" aria-hidden="true"></canvas>
-        <div class="globe-points"></div>
-      </div>
+    <section class="field" aria-labelledby="lab-title">
+      <figure class="field-photo">
+        <img src="assets/huang-engineering-center.jpg" srcset="assets/huang-engineering-center-1200.jpg 1200w, assets/huang-engineering-center.jpg 2400w" sizes="100vw" width="2400" height="1600" alt="The Jen-Hsun Huang Engineering Center at Stanford under a blue sky" fetchpriority="high">
+      </figure>
       <div class="field-inner">
         <div class="field-title">
-          <h1 id="lab-title"><span>AI &amp;</span><span>Entrepreneurship</span><span>Lab</span></h1>
-          <span class="rule" aria-hidden="true"></span>
+          <h1 id="lab-title">AI &amp; Entrepreneurship Lab</h1>
           <p class="field-line">Rethinking entrepreneurship in the age of AI.</p>
           <div class="field-actions">
             <a class="btn btn-primary" href="#research">Explore the research</a>
             <a class="btn btn-ghost" href="#people">Meet the people</a>
           </div>
         </div>
-        <div class="field-foot">
-          <p class="field-hint">Field experiments, surveys and archival studies by Chuck Eesley and his collaborators. Drag the globe, or select a point to see the research in that place.</p>
-          <div class="globe-card" aria-live="polite"><h3>Loading the globe…</h3></div>
-        </div>
       </div>
+      <a class="field-credit" href="https://commons.wikimedia.org/wiki/File:Jen-Hsun_Huang_Engineering_Center_in_2016.jpg">Photo: Frank Schulenburg, CC BY-SA 4.0</a>
     </section>
 
     <section class="band" id="about" aria-labelledby="about-title">
@@ -65,12 +60,25 @@
       </div>
     </section>
 
+    <section class="band-map" id="map" aria-labelledby="map-title" data-research-globe>
+      <div class="globe-viewport">
+        <canvas class="globe-canvas" aria-hidden="true"></canvas>
+        <div class="globe-points"></div>
+      </div>
+      <div class="wrap map-copy">
+        <div class="map-text">
+          <h2 id="map-title">Research map</h2>
+          <span class="rule" aria-hidden="true"></span>
+          <div class="globe-card" aria-live="polite"><h3>Loading the globe…</h3></div>
+        </div>
+      </div>
+    </section>
+
     <section class="band" id="research" aria-labelledby="research-title">
       <div class="wrap split">
         <div class="split-label">
           <h2 id="research-title">Research</h2>
           <span class="rule" aria-hidden="true"></span>
-          <p>Current projects in two lines of work.</p>
         </div>
         <div>
           <div class="theme">
@@ -343,7 +351,6 @@
         <div class="split-label">
           <h2 id="pubs-title">Selected publications</h2>
           <span class="rule" aria-hidden="true"></span>
-          <p>Recent articles by Chuck Eesley and collaborators.</p>
         </div>
         <div>
           <ol class="pubs" id="selected-pubs" reversed>
@@ -360,14 +367,13 @@
           <h2 id="people-title">People</h2>
           <span class="rule" aria-hidden="true"></span>
         </div>
-        <div class="people">
-          <article class="person people-lead">
-            <img class="person-photo" src="assets/people/chuck-eesley-portrait.jpg" width="600" height="750" alt="Portrait of Chuck Eesley" loading="lazy">
-            <h3>Chuck Eesley</h3>
-            <p>Professor, Management Science &amp; Engineering<br>Stanford University</p>
-            <a class="text-link" href="https://profiles.stanford.edu/charles-eesley">Stanford profile</a>
-          </article>
-          <div class="people-grid">
+        <div class="people-grid">
+            <article class="person">
+              <img class="person-photo" src="assets/people/chuck-eesley-portrait.jpg" width="600" height="750" alt="Portrait of Chuck Eesley" loading="lazy">
+              <h3>Chuck Eesley</h3>
+              <p>Professor, Management Science &amp; Engineering<br>Stanford University</p>
+              <a class="text-link" href="https://profiles.stanford.edu/charles-eesley">Stanford profile</a>
+            </article>
             <article class="person">
               <img class="person-photo" src="assets/people/tess-lallemant-portrait.jpg" width="600" height="750" alt="Portrait of Tess Lallemant" loading="lazy">
               <h3>Tess Lallemant</h3>
@@ -403,7 +409,6 @@
               <h3>More members</h3>
               <p>Additional members will be added.</p>
             </article>
-          </div>
         </div>
       </div>
     </section>
@@ -448,6 +453,7 @@
   <script src="assets/vendor/topojson-client.min.js"></script>
   <script src="assets/vendor/world-110m.js"></script>
   <script src="assets/js/research-data.js"></script>
+  <script src="assets/js/earth-textures.js"></script>
   <script src="assets/js/globe.js"></script>
   <script src="assets/js/selected-pubs.js"></script>
 </body>
