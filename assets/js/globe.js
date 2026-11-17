@@ -16,7 +16,7 @@
   var DATA = window.LAB_RESEARCH;
   var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var SPEED = 0.0045;           // degrees per millisecond, about 80 s per turn
-  var LEAD = 34;                // degrees: the "front" sits left of the globe centre, toward the text
+  var LEAD = -28;               // degrees: the "front" sits right of the globe centre, toward the text
   var HOLD_AFTER_SELECT = 9000;
   var HOLD_AFTER_DRAG = 3000;
   var DOT_STEP = 1.25;          // degrees between land dots
@@ -39,6 +39,95 @@
   function cart(lon, lat) {
     var l = lon * RAD, p = lat * RAD, c = Math.cos(p);
     return [c * Math.cos(l), c * Math.sin(l), Math.sin(p)];
+  }
+
+  /* ---------- real Earth ----------
+     A WebGL2 sphere shaded from the satellite image in window.LAB_EARTH: the colour image (with rivers
+     drawn in) plus a relief image (red: elevation, green: water) that gives mountains their light and
+     shadow. Without WebGL2 or the images, the function returns null and the dotted globe is drawn. */
+  function createEarth(viewport, before, onReady) {
+    var SRC = window.LAB_EARTH;
+    if (!SRC || !window.WebGL2RenderingContext) return null;
+    var c = el("canvas", "globe-earth");
+    c.setAttribute("aria-hidden", "true");
+    var gl = c.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false });
+    if (!gl) return null;
+    var VS = "#version 300 es\nvoid main(){vec2 p=vec2(gl_VertexID==1?3.:-1.,gl_VertexID==2?3.:-1.);gl_Position=vec4(p,0.,1.);}";
+    var FS = "#version 300 es\nprecision highp float;\n" +
+      "uniform sampler2D uColor,uRelief;uniform vec3 uC;uniform mat3 uM;out vec4 o;\n" +
+      "const float PI=3.14159265;const vec3 L=normalize(vec3(.78,-.42,.46));const vec3 SKY=vec3(.56,.76,1.);\n" +
+      "void main(){\n" +
+      " vec2 p=(gl_FragCoord.xy-uC.xy)/uC.z;float r=length(p);float px=1.5/uC.z;\n" +
+      " float glow=r>1.?exp(-(r-1.)*30.)*.42*(1.-smoothstep(1.03,1.06,r)):0.;\n" +
+      " if(r>=1.+px&&glow<.002){o=vec4(0.);return;}\n" +
+      " float edge=1.-smoothstep(1.-px,1.,r);\n" +
+      " vec3 col=vec3(0.);\n" +
+      " if(edge>0.){\n" +
+      "  float d=sqrt(max(0.,1.-min(r*r,1.)));vec3 v=vec3(d,p.x,p.y);vec3 w=transpose(uM)*v;\n" +
+      "  float u=atan(w.y,w.x)/(2.*PI)+.5;float t=.5-asin(clamp(w.z,-1.,1.))/PI;\n" +
+      "  float u2=fract(u+.5)-.5;u=fwidth(u)<=fwidth(u2)+1e-6?u:u2;\n" +
+      "  vec3 alb=texture(uColor,vec2(u,t)).rgb;vec3 rel=texture(uRelief,vec2(u,t)).rgb;\n" +
+      "  float du=1./2048.,dv=1./1024.;\n" +
+      "  float he=texture(uRelief,vec2(u+du,t)).r-texture(uRelief,vec2(u-du,t)).r;\n" +
+      "  float hn=texture(uRelief,vec2(u,t-dv)).r-texture(uRelief,vec2(u,t+dv)).r;\n" +
+      "  vec3 T=normalize(vec3(-w.y,w.x,1e-5));vec3 B=cross(w,T);\n" +
+      "  float land=1.-smoothstep(.35,.65,rel.g);\n" +
+      "  vec3 n=normalize(w-(he*T+hn*B)*BUMP*land);\n" +
+      "  vec3 nv=uM*n;float diff=max(dot(nv,L),0.);\n" +
+      "  float sea=1.-land;alb=mix(alb,alb*1.04+vec3(.012,.045,.095),sea);\n  col=alb*(.56+.8*diff);\n" +
+      "  vec3 H=normalize(L+vec3(1.,0.,0.));col+=vec3(.9,.95,1.)*pow(max(dot(v,H),0.),70.)*.26*(1.-land);\n" +
+      "  col=mix(col,SKY,pow(1.-d,2.6)*.62);\n" +
+      " }\n" +
+      " float a=edge+(1.-edge)*glow;o=vec4(col*edge+SKY*(1.-edge)*glow,a);\n" +
+      "}";
+    FS = FS.replace("BUMP", "9.");
+    function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { throw new Error(gl.getShaderInfoLog(s)); } return s; }
+    var prog;
+    try {
+      prog = gl.createProgram();
+      gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+      gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+    } catch (e) { return null; }
+    gl.useProgram(prog);
+    gl.bindVertexArray(gl.createVertexArray());
+    gl.uniform1i(gl.getUniformLocation(prog, "uColor"), 0);
+    gl.uniform1i(gl.getUniformLocation(prog, "uRelief"), 1);
+    var uC = gl.getUniformLocation(prog, "uC"), uM = gl.getUniformLocation(prog, "uM");
+    var aniso = gl.getExtension("EXT_texture_filter_anisotropic");
+    var pending = 2;
+    var api = { ready: false, failed: false, canvas: c };
+    function load(unit, src) {
+      var img = new Image();
+      img.onload = function () {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        if (aniso) gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+        if (--pending === 0) { api.ready = true; onReady(); }
+      };
+      img.onerror = function () { api.failed = true; onReady(); };
+      img.src = src;
+    }
+    api.resize = function (w, h) { c.width = w; c.height = h; gl.viewport(0, 0, w, h); };
+    api.draw = function (M, x, y, r) {
+      if (!api.ready) return;
+      gl.uniform3f(uC, x, c.height - y, r);
+      gl.uniformMatrix3fv(uM, false, [M[0][0], M[0][1], M[0][2], M[1][0], M[1][1], M[1][2], M[2][0], M[2][1], M[2][2]]);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
+    viewport.insertBefore(c, before);
+    load(0, SRC.color);
+    load(1, SRC.relief);
+    return api;
   }
 
   function init(root) {
@@ -119,7 +208,7 @@
     }) : [];
 
     var state = {
-      rot: [-20, -16, 0],
+      rot: [-4, -8, 0],
       featured: null,
       chosen: null,
       hover: null,
@@ -130,6 +219,9 @@
       t: 0
     };
     var W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1, M = null;
+    var earth = createEarth(viewport, canvas, function () { requestDraw(); });
+    var hit = el("div", "globe-hit");
+    viewport.insertBefore(hit, pointsBox);
 
     /* ---------- points ---------- */
     var points = {};
@@ -213,9 +305,15 @@
       dpr = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
-      var wide = getComputedStyle(viewport).position === "absolute";
-      if (wide) { R = Math.min(H * 0.46, W * 0.3); cx = W - R * 0.6; cy = H * 0.5; }
-      else { R = W * 0.44; cx = W * 0.5; cy = H * 0.5; }
+      if (getComputedStyle(viewport).position === "absolute") {
+        // The globe sits on top of the band and rises above and below it, while still filling the band's left corners.
+        var band = root.getBoundingClientRect().height, text = root.querySelector(".map-text");
+        var room = text ? text.getBoundingClientRect().left - 40 : W;
+        R = Math.min(band * 0.57, band / 2 + W * 0.0375); cy = H * 0.5;
+        cx = Math.min(Math.sqrt(R * R - band * band / 4) * 0.96, room - R);
+      } else { R = Math.min(W, H) * 0.47; cx = W * 0.5; cy = H * 0.5; }
+      hit.style.cssText = "left:" + (cx - R) + "px;top:" + (cy - R) + "px;width:" + 2 * R + "px;height:" + 2 * R + "px";
+      if (earth) earth.resize(canvas.width, canvas.height);
       projection.translate([cx, cy]).scale(R);
       draw();
     }
@@ -227,12 +325,15 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
+      var real = earth && !earth.failed;
+      if (real) earth.draw(M, cx * dpr, cy * dpr, R * dpr);
+      if (!real) {
       // atmosphere
-      var glow = ctx.createRadialGradient(cx, cy, R * 0.96, cx, cy, R * 1.22);
+      var glow = ctx.createRadialGradient(cx, cy, R * 0.97, cx, cy, R * 1.06);
       glow.addColorStop(0, C.glow);
-      glow.addColorStop(1, "rgba(0,0,0,0)");
+      glow.addColorStop(1, "rgba(255,255,255,0)");
       ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(cx, cy, R * 1.22, 0, 2 * Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, R * 1.06, 0, 2 * Math.PI); ctx.fill();
 
       // sea
       var sea = ctx.createRadialGradient(cx - R * 0.4, cy - R * 0.45, R * 0.05, cx, cy, R);
@@ -267,6 +368,7 @@
 
       // rim
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.strokeStyle = C.rim; ctx.lineWidth = 1; ctx.stroke();
+      }
 
       // raised arcs
       arcs.forEach(function (a) {
@@ -282,7 +384,7 @@
           if (pen) ctx.lineTo(X, Y); else { ctx.moveTo(X, Y); pen = true; }
         }
         ctx.strokeStyle = on ? C["arc-active"] : C.arc;
-        ctx.lineWidth = on ? 1.6 : 1;
+        ctx.lineWidth = on ? 1.3 : 1;
         ctx.setLineDash(on || REDUCED ? [] : [2, 5]);
         ctx.lineDashOffset = -state.t * 0.02;
         ctx.stroke();
@@ -351,13 +453,13 @@
     }
 
     /* ---------- dragging ---------- */
-    canvas.addEventListener("pointerdown", function (ev) {
+    hit.addEventListener("pointerdown", function (ev) {
       state.drag = { x: ev.clientX, y: ev.clientY, rot: state.rot.slice() };
       state.anim = null;
-      canvas.setPointerCapture(ev.pointerId);
+      hit.setPointerCapture(ev.pointerId);
       start();
     });
-    canvas.addEventListener("pointermove", function (ev) {
+    hit.addEventListener("pointermove", function (ev) {
       if (!state.drag) return;
       var s = 90 / R;
       state.rot = [state.drag.rot[0] + (ev.clientX - state.drag.x) * s, clamp(state.drag.rot[1] - (ev.clientY - state.drag.y) * s, -55, 55), 0];
@@ -370,8 +472,8 @@
       var n = nearestToFront();
       if (n) feature(n);
     }
-    canvas.addEventListener("pointerup", endDrag);
-    canvas.addEventListener("pointercancel", endDrag);
+    hit.addEventListener("pointerup", endDrag);
+    hit.addEventListener("pointercancel", endDrag);
 
     /* ---------- start ---------- */
     renderCard(null);
